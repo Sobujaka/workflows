@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic M3U to JSON Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 350px;
+      font-family: monospace;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Dynamic M3U to JSON Converter</h2>
+  <p>Upload your <b>.m3u</b> or <b>.m3u8</b> file to extract all episode links dynamically into JSON.</p>
+  
+  <input type="file" id="m3uInput" accept=".m3u, .m3u8">
+  <br>
+  <textarea id="jsonOutput" readonly placeholder="Parsed JSON will appear here..."></textarea>
+  <br>
+  <button id="downloadBtn" disabled>Download JSON File</button>
+</div>
+
+<script>
+  const m3uInput = document.getElementById('m3uInput');
+  const jsonOutput = document.getElementById('jsonOutput');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  m3uInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const content = event.target.result;
+      const lines = content.split(/\r?\n/);
+      
+      let urls = [];
+      for (let line of lines) {
+        line = line.trim();
+        if (line && !line.startsWith('#')) {
+          urls.push(line);
+        }
+      }
+
+      // Base JSON template
+      let resultData = {
+        "name": "",
+        "image": "",
+        "category": "ANIMATION",
+        "country": "",
+        "language": "",
+        "episodes": {}
+      };
+
+      // Loop through all found links dynamically (S1EP1, S1EP2, S1EP3 ... S1EPN)
+      urls.forEach((url, index) => {
+        const epKey = `S1EP${index + 1}`;
+        resultData.episodes[epKey] = url;
+      });
+
+      const jsonString = JSON.stringify(resultData, null, 2);
+      jsonOutput.value = jsonString;
+      downloadBtn.disabled = false;
+    };
+
+    reader.readAsText(file);
+  });
+
+  downloadBtn.addEventListener('click', function() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonOutput.value);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "episodes.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  });
+</script>
+
+</body>
+</html>
