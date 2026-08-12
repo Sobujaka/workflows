@@ -109,7 +109,6 @@
 
         .video-wrapper iframe, .video-wrapper video { width: 100%; height: 100%; border: none; }
 
-        /* active playing code box area */
         .active-code-box {
             margin-top: 15px;
             background: #161e2e;
@@ -180,7 +179,6 @@
                     <video id="html5Player" controls style="display:none;"></video>
                 </div>
 
-                <!-- Editable Active Code Box Area -->
                 <div class="active-code-box">
                     <h3>
                         <span>Edit & Copy JSON Code:</span>
@@ -199,6 +197,7 @@
 
     <script>
         let hlsPlayer = null;
+        let lastScrollPosition = 0; // স্ক্রোল পজিশন সেভ রাখার ভেরিয়েবল
 
         function processTestCode() {
             let rawInput = document.getElementById('jsonInput').value.trim();
@@ -293,6 +292,9 @@
         }
 
         function openPlayerPage(item) {
+            // প্লেয়ার খোলার ঠিক আগে বর্তমান পেজের স্ক্রোল পজিশন সেভ করা হচ্ছে
+            lastScrollPosition = window.scrollY || document.documentElement.scrollTop;
+
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('player-view').style.display = 'block';
 
@@ -302,15 +304,15 @@
             const epGrid = document.getElementById('epGrid');
             const epKeys = Object.keys(item.episodes);
 
-            epKeys.forEach((key, index) => {
+            epKeys.forEach((indexKey, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'ep-btn';
-                btn.innerText = key;
+                btn.innerText = indexKey;
                 btn.onclick = () => {
                     document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    loadVideo(item.episodes[key], `${item.name} (${key})`);
-                    generateCodeBox(item, key);
+                    loadVideo(item.episodes[indexKey], `${item.name} (${indexKey})`);
+                    generateCodeBox(item, indexKey);
                 };
                 epGrid.appendChild(btn);
                 if (index === 0) btn.click();
@@ -412,6 +414,10 @@
         function closePlayerPage() {
             document.getElementById('player-view').style.display = 'none';
             document.getElementById('home-view').style.display = 'block';
+            
+            // পূর্বে সেভ করা স্ক্রোল পজিশনে ফিরিয়ে দেওয়া হচ্ছে
+            window.scrollTo(0, lastScrollPosition);
+
             document.getElementById('iframePlayer').src = '';
             const video = document.getElementById('html5Player');
             video.pause();
