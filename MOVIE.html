@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Movie M3U to JSON Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    .container {
+      max-width: 750px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 380px;
+      font-family: monospace;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Multi-Movie M3U to JSON Converter</h2>
+  <p>Upload an M3U file containing multiple movies to extract all movie titles, images, and links.</p>
+  
+  <input type="file" id="m3uInput" accept=".m3u, .m3u8">
+  <br>
+  <textarea id="jsonOutput" readonly placeholder="Parsed JSON list will appear here..."></textarea>
+  <br>
+  <button id="downloadBtn" disabled>Download Movies JSON</button>
+</div>
+
+<script>
+  const m3uInput = document.getElementById('m3uInput');
+  const jsonOutput = document.getElementById('jsonOutput');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  m3uInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/);
+      
+      let movieList = [];
+      let currentTitle = "";
+      let currentImage = "";
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        
+        if (line.startsWith('#EXTINF:')) {
+          // Extract Image URL if tvg-logo exists
+          const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+          currentImage = (logoMatch && logoMatch[1]) ? logoMatch[1] : "";
+
+          // Extract Title after comma
+          const parts = line.split(',');
+          if (parts.length > 1) {
+            currentTitle = parts.slice(1).join(',').trim();
+          } else {
+            currentTitle = "Untitled Movie";
+          }
+        } 
+        // Read URL line right after #EXTINF
+        else if (line && !line.startsWith('#')) {
+          movieList.push({
+            "title": currentTitle || "Untitled Movie",
+            "image": currentImage,
+            "category": "",
+            "country": "",
+            "language": "",
+            "Movie link": line
+          });
+
+          // Reset title and image for next entry
+          currentTitle = "";
+          currentImage = "";
+        }
+      }
+
+      const jsonString = JSON.stringify(movieList, null, 2);
+      jsonOutput.value = jsonString;
+      downloadBtn.disabled = movieList.length === 0;
+    };
+
+    reader.readAsText(file);
+  });
+
+  downloadBtn.addEventListener('click', function() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonOutput.value);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "all_movies.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  });
+</script>
+
+</body>
+</html>
