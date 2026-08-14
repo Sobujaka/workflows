@@ -1,37 +1,34 @@
-name: Auto Update LIVE-TV.JSON
+name: Auto Update Live TV JSON
 
 on:
   schedule:
-    # প্রতি ৬ মিনিট পরপর চালানোর জন্য Cron Expression
+    # প্রতি ৬ মিনিট পর পর অটোমেটিক রান হবে
     - cron: '*/6 * * * *'
-  workflow_dispatch: # চাইলে ব্যাকএন্ড থেকে ম্যানুয়ালি রান করার জন্য
+  workflow_dispatch: # এই লাইনের কারণে আপনি ম্যানুয়ালি Actions ট্যাব থেকে বাটন চেপেও আপডেট করতে পারবেন
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
 
     steps:
-      # ১. রিポジটরি ক্লোন/চেকআউট করা
-      - name: Checkout Repository
+      - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # ২. Worker থেকে ডাটা ফেচ করে LIVE-TV.JSON ফাইলে সেভ করা
-      - name: Fetch JSON from Cloudflare Worker
+      - name: Download latest live-tv.json
         run: |
-          curl -s "https://spring-voice-2488.jahangir339932.workers.dev/" -o LIVE-TV.JSON
+          curl -s "https://spring-voice-2488.jahangir339932.workers.dev/" -o live-tv.json
 
-      # ৩. ফাইলের কোনো পরিবর্তন হয়েছে কিনা তা চেক করা এবং GitHub-এ Commit/Push করা
-      - name: Commit and Push Changes
+      - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          git add LIVE-TV.JSON
+          git add live-tv.json
           
-          # যদি ফাইলে পরিবর্তন থাকে তবেই commit করবে
+          # ডাটাতে পরিবর্তন থাকলে তবেই Commit করবে
           if git diff --staged --quiet; then
-            echo "No changes detected in LIVE-TV.JSON."
+            echo "No changes found in live-tv.json."
           else
-            git commit -m "Auto update LIVE-TV.JSON [Skip CI]"
+            git commit -m "Auto-update live-tv.json from Worker [skip ci]"
             git push
           fi
