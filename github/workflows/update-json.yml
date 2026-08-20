@@ -1,34 +1,42 @@
-name: Auto Update Live TV JSON
+name: Auto Update IBS Special Movies
 
 on:
+  push:
+    branches:
+      - 'M3u8'    # এই ব্রাঞ্চে কোনো পরিবর্তন করলেই রান হবে
   schedule:
-    # প্রতি ৬ মিনিট পর পর অটোমেটিক রান হবে
-    - cron: '*/6 * * * *'
-  workflow_dispatch: # এই লাইনের কারণে আপনি ম্যানুয়ালি Actions ট্যাব থেকে বাটন চেপেও আপডেট করতে পারবেন
+    - cron: '*/30 * * * *' # প্রতি ৩০ মিনিট পর পর
+  workflow_dispatch:      # ম্যানুয়ালি রান করার বাটন
 
 jobs:
-  update-data:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout repository code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: 'M3u8' # সরাসরি আপনার M3u8 ব্রাঞ্চটি সিলেক্ট করা হয়েছে
 
-      - name: Download latest live-tv.json
-        run: |
-          curl -s "https://spring-voice-2488.jahangir339932.workers.dev/" -o live-tv.json
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-      - name: Commit and push changes
+      - name: Install Dependencies
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          pip install requests pytz
+
+      - name: Run Movie Scraper
+        run: python movie_script.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "IBS TV special.m3u"
+          git commit -m "Automated Movie Update: $(date)" || exit 0
+          git push origin M3u8
           
-          git add live-tv.json
-          
-          # ডাটাতে পরিবর্তন থাকলে তবেই Commit করবে
-          if git diff --staged --quiet; then
-            echo "No changes found in live-tv.json."
-          else
-            git commit -m "Auto-update live-tv.json from Worker [skip ci]"
-            git push
-          fi
